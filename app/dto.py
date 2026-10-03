@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 def to_camel(value: str) -> str:
