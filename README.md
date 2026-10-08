@@ -17,3 +17,7 @@ MAIL_PORT=587
 MAIL_USERNAME=you@example.com
 MAIL_PASSWORD=app-password
 ```
+
+Request comments email the other party, and status changes email the customer, with the message/status and request link. Notifications use the existing mail settings and run after saving; failures are logged without undoing the update.
+
+To run notification tests, install `httpx` alongside the requirements and run `python -m unittest discover -s tests -v`. Tests use an isolated in-memory database and mocked email delivery.

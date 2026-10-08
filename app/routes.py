@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 import secrets
 import smtplib
+import logging
 
 import boto3
 from fastapi import APIRouter, BackgroundTasks, File, Form, Header, HTTPException, UploadFile
@@ -113,6 +114,13 @@ def send_request_created_emails(request: WebsiteRequest) -> None:
         send_email(ADMIN_EMAIL, f"New website request: {request.request_number}", admin_body)
     except Exception:
         return
+
+
+def send_request_update_email(recipient: str, request_number: str, subject: str, detail: str) -> None:
+    try:
+        send_email(recipient, f"{subject}: {request_number}", f"{detail}\n\nOpen your request:\n{PUBLIC_APP_BASE_URL}/request/{request_number}")
+    except Exception:
+        logging.getLogger(__name__).exception("Request update email failed for %s", request_number)
 
 
 @router.get("/health")
@@ -250,7 +258,7 @@ def get_request(request_number: str, authorization: str | None = Header(default=
 
 
 @router.post("/requests/{request_number}/comments", response_model=WebsiteRequestCommentResponse)
-def create_comment(request_number: str, payload: WebsiteRequestCommentCreate, authorization: str | None = Header(default=None)):
+def create_comment(request_number: str, payload: WebsiteRequestCommentCreate, background_tasks: BackgroundTasks, authorization: str | None = Header(default=None)):
     if not payload.body.strip():
         raise HTTPException(status_code=400, detail="Message is required.")
     with SessionLocal() as session:
@@ -262,17 +270,23 @@ def create_comment(request_number: str, payload: WebsiteRequestCommentCreate, au
         session.add(comment)
         session.commit()
         session.refresh(comment)
+        recipient = request.customer_email if role.name == ROLE_ADMIN else ADMIN_EMAIL
+        background_tasks.add_task(send_request_update_email, recipient, request.request_number, "New website request message", comment.body)
         return WebsiteRequestCommentResponse(id=comment.id, author_role=comment.author_role.name, body=comment.body, created_at=comment.created_at, updated_at=comment.updated_at)
 
 
 @router.post("/admin/requests/{request_number}/status", response_model=WebsiteRequestResponse)
-def update_request_status(request_number: str, payload: WebsiteRequestStatusUpdate, authorization: str | None = Header(default=None)):
+def update_request_status(request_number: str, payload: WebsiteRequestStatusUpdate, background_tasks: BackgroundTasks, authorization: str | None = Header(default=None)):
     get_current_admin(authorization)
     with SessionLocal() as session:
         request = session.scalar(select(WebsiteRequest).where(WebsiteRequest.request_number == request_number))
         if not request:
             raise HTTPException(status_code=404, detail="Website request not found.")
-        request.status_id = get_status(session, payload.status).id
+        status = get_status(session, payload.status)
+        changed = request.status_id != status.id
+        request.status_id = status.id
         session.commit()
         session.refresh(request)
+        if changed:
+            background_tasks.add_task(send_request_update_email, request.customer_email, request.request_number, "Website request status updated", f"Your website request status is now {payload.status.replace('_', ' ')}.")
         return build_request_response(session, request, True)
