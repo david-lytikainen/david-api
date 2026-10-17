@@ -137,7 +137,7 @@ async def save_image(screenshot: UploadFile, site_id: int) -> None:
 
 
 def build_site_response(site: PortfolioSite, request: Request) -> PortfolioSiteResponse:
-    url = request.url_for("get_portfolio_image", filename=image_filename(site.id))
+    url = request.url_for("get_portfolio_image", filename=image_filename(site.id)).include_query_params(v=site.updated_at.isoformat())
     return PortfolioSiteResponse(id=site.id, name=site.name, site_url=site.site_url, screenshot_url=str(url), display_order=site.display_order)
 
 
@@ -281,6 +281,7 @@ async def update_portfolio_site(request: Request, site_id: int, name: str = Form
             if not screenshot.content_type or not screenshot.content_type.startswith("image/"):
                 raise HTTPException(status_code=400, detail="Screenshot must be an image.")
             await save_image(screenshot, site.id)
+            site.updated_at = datetime.now(timezone.utc)
         session.commit()
         session.refresh(site)
         return build_site_response(site, request)
