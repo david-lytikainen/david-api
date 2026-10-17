@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 
 from app.config import CORS_ORIGIN_LIST, SessionLocal, engine
 from app.models import Base, REQUEST_STATUS_NAMES, ROLE_NAMES, RequestStatus, Role
@@ -18,9 +18,21 @@ def sync_bootstrap_lookup_tables() -> None:
         session.commit()
 
 
+def migrate_portfolio_sites() -> None:
+    columns = {column["name"] for column in inspect(engine).get_columns("portfolio_sites")}
+    legacy_columns = ("screenshot_url", "screenshot_s3_key")
+    with engine.begin() as connection:
+        if "name" not in columns:
+            connection.execute(text("ALTER TABLE portfolio_sites ADD COLUMN name VARCHAR(255) NOT NULL DEFAULT ''"))
+        for column in legacy_columns:
+            if column in columns:
+                connection.execute(text(f"ALTER TABLE portfolio_sites DROP COLUMN {column}"))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    migrate_portfolio_sites()
     sync_bootstrap_lookup_tables()
     yield
 

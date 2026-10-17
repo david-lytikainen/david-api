@@ -30,6 +30,7 @@ class LoginRequest(DtoModel):
 
 class PortfolioSiteResponse(DtoModel):
     id: int
+    name: str
     site_url: str
     screenshot_url: str
     display_order: int

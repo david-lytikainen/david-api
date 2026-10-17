@@ -12,13 +12,16 @@ CREATE TABLE IF NOT EXISTS request_statuses (
 
 CREATE TABLE IF NOT EXISTS portfolio_sites (
     id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL DEFAULT '',
     site_url VARCHAR(1024) NOT NULL,
-    screenshot_url VARCHAR(1024) NOT NULL DEFAULT '',
-    screenshot_s3_key VARCHAR(512),
     display_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE portfolio_sites ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE portfolio_sites DROP COLUMN IF EXISTS screenshot_url;
+ALTER TABLE portfolio_sites DROP COLUMN IF EXISTS screenshot_s3_key;
 
 CREATE TABLE IF NOT EXISTS website_requests (
     id SERIAL PRIMARY KEY,

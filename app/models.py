@@ -38,9 +38,8 @@ class PortfolioSite(Base):
     __tablename__ = "portfolio_sites"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     site_url: Mapped[str] = mapped_column(String(1024), nullable=False)
-    screenshot_url: Mapped[str] = mapped_column(String(1024), nullable=False)
-    screenshot_s3_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
