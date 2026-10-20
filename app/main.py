@@ -29,10 +29,20 @@ def migrate_portfolio_sites() -> None:
                 connection.execute(text(f"ALTER TABLE portfolio_sites DROP COLUMN {column}"))
 
 
+def migrate_request_numbers() -> None:
+    if engine.dialect.name != "postgresql":
+        return
+    columns = {column["name"]: column for column in inspect(engine).get_columns("website_requests")}
+    if (getattr(columns["request_number"].get("type"), "length", None) or 0) < 13:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE website_requests ALTER COLUMN request_number TYPE VARCHAR(13)"))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
     migrate_portfolio_sites()
+    migrate_request_numbers()
     sync_bootstrap_lookup_tables()
     yield
 

@@ -49,7 +49,7 @@ class WebsiteRequest(Base):
     __tablename__ = "website_requests"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    request_number: Mapped[str] = mapped_column(String(6), nullable=False, unique=True, index=True)
+    request_number: Mapped[str] = mapped_column(String(13), nullable=False, unique=True, index=True)
     customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
     customer_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     customer_phone: Mapped[str] = mapped_column(String(64), nullable=False)

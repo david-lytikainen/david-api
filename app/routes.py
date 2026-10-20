@@ -161,7 +161,7 @@ def build_request_response(session: Session, request: WebsiteRequest, is_admin: 
 
 def new_request_number(session: Session) -> str:
     while True:
-        request_number = f"{secrets.randbelow(1_000_000):06d}"
+        request_number = f"LYT-{secrets.randbelow(1_000_000_000):09d}"
         if not session.scalar(select(WebsiteRequest.id).where(WebsiteRequest.request_number == request_number)):
             return request_number
 
